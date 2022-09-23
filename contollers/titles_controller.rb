@@ -7,15 +7,7 @@ class TitlesController < ApplicationController
   helper_method :static_images
 
   def index
-    if params[:title_type].present? && Title.categories.include?(params[:title_type])
-      @titles, params = TitlesService.fetch_all_titles(params)
-      @all_titles_count = Title.where(title_type: params[:title_type]).all.count
-      meta_tag_group = MetaTag.find_by(page_type:"Title by type titles#index") # Some meta tags are kept in database
-    else
-      @titles = Title.paginate(:page => params[:page], :per_page => 52).includes(:attachment, :influence_relationships, :influenced_relationships)
-      @all_titles_count = Title.all.count
-      meta_tag_group = MetaTag.find_by(page_type:"Home Page titles#index")
-    end
+    @titles, @all_titles_count, meta_tag_group = TitlesService.new(params).fetch_all_titles
 
     if meta_tag_group.present?
       @description = meta_tag_group.description
@@ -28,7 +20,6 @@ class TitlesController < ApplicationController
       format.html
       format.js
     end
-
   end
 
   def show
