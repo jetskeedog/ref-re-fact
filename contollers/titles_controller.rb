@@ -7,41 +7,7 @@ class TitlesController < ApplicationController
   helper_method :static_images
 
   def index
-    if params[:title_type].present? && Title.categories.include?(params[:title_type])
-      if params[:sort] == "A-Z"
-        @titles = Title.select("titles.*, CASE WHEN regexp_replace(lower(trim(name)), '[^A-Za-z]+', '', 'g')::text = '' THEN 'zzz' ELSE regexp_replace(lower(trim(name)), '[^A-Za-z]+', '', 'g') END as tname").where(title_type: params[:title_type]).order("tname").paginate(:page => params[:page], :per_page => 52)
-      elsif params[:sort] == "Z-A"
-        @titles = Title.select("titles.*, CASE WHEN regexp_replace(lower(trim(name)), '[^A-Za-z]+', '', 'g')::text = '' THEN 'zzz' ELSE regexp_replace(lower(trim(name)), '[^A-Za-z]+', '', 'g') END as tname").where(title_type: params[:title_type]).order("tname desc").paginate(:page => params[:page], :per_page => 52)
-      elsif params[:sort] == "highest_number"
-        @titles = Title.where(title_type: params[:title_type]).order("relationships_count DESC").paginate(:page => params[:page], :per_page => 52)
-      elsif params[:sort] == "lowest_number"
-        @titles = Title.where(title_type: params[:title_type]).order("relationships_count ASC").paginate(:page => params[:page], :per_page => 52)
-      elsif params[:sort] == 'lowest_iscore' || params[:sort] == 'highest_iscore'
-        sort_dir = params[:sort] == 'lowest_iscore' ? :asc : :desc
-        @titles = Title.where(title_type: params[:title_type])
-                       .order("influence_score #{sort_dir}").paginate(:page => params[:page], :per_page => 52)
-
-        puts("SQL: #{@titles.to_sql}")
-      else
-        if params[:title_type] == "Movie"
-          params[:sort] = "highest_iscore"
-          params[:page_type] = "movie"
-          sort_dir = :desc
-          @titles = Title.where(title_type: params[:title_type])
-                         .order("influence_score #{sort_dir}").paginate(:page => params[:page], :per_page => 52)
-        else
-          params[:sort] = "highest_number"
-          @titles = Title.where(title_type: params[:title_type]).order("relationships_count DESC").paginate(:page => params[:page], :per_page => 52)
-          params[:page_type] = "others"
-        end
-      end
-      @all_titles_count = Title.where(title_type: params[:title_type]).all.count
-      meta_tag_group = MetaTag.find_by(page_type:"Title by type titles#index") # Some meta tags are kept in database
-    else
-      @titles = Title.paginate(:page => params[:page], :per_page => 52).includes(:attachment, :influence_relationships, :influenced_relationships)
-      @all_titles_count = Title.all.count
-      meta_tag_group = MetaTag.find_by(page_type:"Home Page titles#index")
-    end
+    @titles, @all_titles_count, meta_tag_group = TitlesService.new(params).fetch_all_titles
 
     if meta_tag_group.present?
       @description = meta_tag_group.description
@@ -54,7 +20,6 @@ class TitlesController < ApplicationController
       format.html
       format.js
     end
-
   end
 
   def show
