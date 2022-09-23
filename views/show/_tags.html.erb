@@ -1,0 +1,29 @@
+<% tag_name_array = @tag_name_array %>
+<% if tag_name_array.present? %>
+  <div>
+    <h5 class="text-center text-white">Connection type:</h5>
+  </div>
+  <% tag_name_array_asc=tag_name_array.group_by{|x| x}.sort_by{|k, v| -v.size}.map(&:first) %>
+  <div class="genres-list tag-btn-wrapper">
+    <% tag_name_array_asc.each do |tag_name| %>
+      <% tag_name_count = tag_name_array.count(tag_name) %>
+      <%= link_to "#{ tag_name_count } #{ tag_name.titleize }", title_path(@title, sort: @sort.present? ? @sort : "", sort_by_genre: @sort_by_genre.present? ? @sort_by_genre : "", sort_by_tag: tag_name, title_container: "influence_rel_container"), remote: true, class: "btn btn-round title-tags m-2", data: {tag_name: tag_name}%>
+    <%end%>
+  </div>
+<% end %>
+
+<script type="text/javascript">
+/*The js code is in view because this partial is rendered asynchronously*/
+
+  $(document).on('click', '.title-tags', function() {
+    $('.title-tags').removeClass('chosen');
+    $(this).addClass('chosen');
+    var tagName = $(this).data("tagName");
+    $('.title-tags').each(function () {
+      if ($(this).data("tagName") == tagName){
+        $(this).addClass('chosen');
+      }
+    })
+  });
+
+</script>

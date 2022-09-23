@@ -1,0 +1,90 @@
+<% type_and_genre = (@sort.present? ? " #{@sort.to_s}" : "") + (@sort_by_genre.present? ? " (#{@sort_by_genre.to_s})" : "") + (@sort_by_tag.present? ? ", connection type #{@sort_by_tag.to_s}" : "") %>
+<div class="row ml-0 mr-0">
+  <div class="mt-5">
+    <h3 class="relationship_info text-white text-center">
+      <%= "#{@influence_titles_count}" %>
+      <span style="color: #ff6b6d;">
+        <%= type_and_genre %>
+      </span>
+      <span>
+        <%= 'Reference'.pluralize(@influence_titles_count) %>
+      </span>
+<!--      <span style="color: #ff6b6d;">-->
+        <%#= @title.name %>
+<!--      </span>-->
+    </h3>
+  </div>
+</div>
+<% if @year_filter_present %>
+  <div class="row ml-0 mr-0"><div class="mb-3"><h4 class="relationship_info"><span style="color: #ff6b6d;">Year: <%= "#{@selected_min_year} - #{@selected_max_year}" %></h4></div></div>
+<% end %>
+<div class="row" id="influence_titles">
+  <%= render "titles/show/influence_titles", fav_lists: @fav_lists, fav_title_ids: @fav_title_ids %>
+</div>
+<% if @paginate_influences_1 == true %>
+  <div class="container"> <!-- For actual pagination -->
+    <div id="paginate_influences">
+      <%= render "titles/show/influences_paginate", fav_lists: @fav_lists, fav_title_ids: @fav_title_ids%>
+    </div>
+  </div>
+<% else %>
+  <% if @influence_titles_count > @max_see_more %>
+    <span class="see_more_influences" style="display: none"><%= will_paginate @influence_titles, params: { title_category: "influences"  } %></span> <!-- For "See more" button -->
+    <div class="row">
+      <div class="col text-center mt-3 ">
+        <button id="see_more_influences" class="btn btn-outline see-more">See More</button>
+      </div>
+    </div>
+  <% end %>
+<%end%>
+
+<script type="text/javascript">
+
+/*
+  This view is rendered asynchronously, and the javascript code also should be rendered with it
+*/
+
+  var status = {
+    loading_influenceds:false,
+    loading_influences:false
+  }
+
+  function fetchTitles(title_type, status, self){
+    loading = "loading_" + title_type
+    request_num = "req_num_" + title_type
+    reference = ".see_more_" + title_type + " .pagination .next_page"
+    last_reference = ".see_more_" + title_type + " .pagination span.next_page.disabled"
+
+    if(!status[loading]){
+
+      status[loading] = true
+
+      more_titles_url = $(reference).attr("href")
+
+      self.html("Loading ...").prop('disabled', true)
+      //setTimeout(function(){self.html("Loading ...").prop('disabled', true)},100)
+      $.get({url: more_titles_url, dataType: "script"}, function(){
+      })
+        .done(function(){
+          //alert("Success")
+        })
+        .fail(function(){
+          //alert("Fail")
+        })
+        .always(function(){
+          self.html("See more").prop('disabled', false);
+          status[loading] = false
+          last_reference_val = $(last_reference).html()
+          if(last_reference_val != null){
+            self.hide()
+          }
+        });
+    }
+  }
+
+  $("#see_more_influences").click(function(){
+    self = $(this)
+    fetchTitles("influences", status, self)
+  });
+
+</script>

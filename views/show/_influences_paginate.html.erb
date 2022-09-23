@@ -1,0 +1,8 @@
+<div class="pagination-container">
+  <div class="lg-device">
+		<%= paginate @influence_titles, window: 4, remote: true, params: { title_category: "pg_influences", sort: @sort, sort_by_genre: @sort_by_genre, sort_by_tag: @sort_by_tag, from: @selected_min_year, to: @selected_max_year } %>
+  </div>
+  <div class="sm-device">
+		<%= paginate @influence_titles, window: 1, remote: true, params: { title_category: "pg_influences", sort: @sort, sort_by_genre: @sort_by_genre, sort_by_tag: @sort_by_tag, from: @selected_min_year, to: @selected_max_year } %>
+  </div>
+</div>

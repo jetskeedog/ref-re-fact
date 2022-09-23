@@ -1,0 +1,70 @@
+<div class="row ml-0 mr-0 my-4">
+  <% tv_seasons = @title.tv_seasons %>
+  <% if tv_seasons.present? %>
+    <% tv_seasons = tv_seasons.sort_by{|v| v.tv_season_num} %>
+    <div class="col-md-12 col-sm-12 col-xs-12 col-lg-2 col-xl-2 p-0"><h5>Browse by Seasons:</h5></div>
+    <div class="d-flex flex-wrap col-md-12 col-sm-12 col-xs-12 col-lg-10 col-xl-10" id="">
+      <% tv_seasons.each do |tv_season| %>
+        <%= link_to "#{ tv_season.tv_season_num }", tv_season_titles_path(tv_season), class: "btn btn-outline-danger rounded mr-2 title-genre-group title-genre-group-influence"%>
+      <%end%>
+    </div>
+  <%end%>
+</div>
+
+<div class="row ml-0 mr-0 my-4">
+  <% if tv_seasons.present? %>
+    <% tv_seasons = tv_seasons.sort_by{|v| v.tv_season_num} %>
+    <div class="col-md-12 col-sm-12 col-xs-12 col-lg-2 col-xl-2 p-0"><h5>Browse by Episode:</h5></div>
+    <div class="d-flex flex-wrap col-md-12 col-sm-12 col-xs-12 col-lg-10 col-xl-10" id="">
+      <h5 style="margin-right:4px; margin-left:4px;">Season:</h5>
+      <select class="tv-season-select" >
+        <option value="" selected="selected">TV Season</option>
+        <% tv_seasons.each do |tv_season| %>
+          <% if tv_season.tv_episodes.present? %>
+            <option value="<%= tv_season.tv_season_num %>"><%= tv_season.tv_season_num %></option>
+          <%end%>
+        <%end%>
+      </select>
+      <h5 style="margin-right:4px; margin-left:4px;">Episode:</h5>
+      <select class="tv-episode-select" onchange="location = this.value;">
+        <option value="#" selected="selected" class="default-episode" >TV Episode</option>
+        <% tv_seasons.each do |tv_season| %>
+          <% if tv_season.tv_episodes.present? %>
+            <% tv_season.tv_episodes.sort_by{|v| v.tv_episode_num}.each do |tv_episode| %>
+              <option value="<%= title_path(tv_episode) %>" name="<%= tv_episode.tv_episode_num %>" class=<%= "tv-season-#{tv_season.tv_season_num}" %>><%= "#{tv_episode.tv_episode_num} - #{tv_episode.name}" %></option>
+            <% end %>
+          <%end%>
+        <%end%>
+      </select>
+    </div>
+  <%end%>
+</div>
+
+<script type="text/javascript">
+  $(document).ready(function(){
+
+    var currentSeason = ""
+    var curSeasonClass = ""
+    var visibleOptionCount = 0
+    changeState();
+
+    $('.tv-season-select').on('change', function(){
+      changeState();
+    });
+
+    function changeState(){
+      visibleOptionCount = 0
+      currentSeason = $('.tv-season-select').val()
+      curSeasonClass = "tv-season-" + currentSeason
+      $('.tv-episode-select > option').each(function(e){
+        if( !($(this).hasClass(curSeasonClass)) && !($(this).hasClass("default-episode")) ){
+          $(this).addClass("hide")
+          $(this).removeAttr('selected');
+        } else {
+          $(this).removeClass("hide")
+        }
+      });
+    }
+
+  });
+</script>

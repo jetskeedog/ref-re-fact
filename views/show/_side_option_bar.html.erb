@@ -1,0 +1,109 @@
+<input type="checkbox" name="cp-settings-toggle" id="cp-settings-toggle" />
+<label for="cp-settings-toggle"></label>
+
+<div class="cp-settings-pannel">
+  <h3 class="text-center">Options</h3>
+  <h4>Favorites</h4>
+  <ul class="cp-settings-category">
+    <li>
+      <%= check_box_tag('select_all_title', nil, false, class: 'fav_list_checkbox select_all_titles_checkbox') %>
+      <label class="checkbox_label">Select All Titles</label>
+    </li>
+    <li>
+      <%= check_box_tag('current_title', nil, @fav_list.present?, class: 'fav_list_checkbox current_fav_title', "data-title-name" => title.name) %>
+      <label class="checkbox_label">Add Current Title</label>
+    </li>
+    <li>
+      <a class="btn btn-link" data-bs-toggle="collapse" href="#favorites_new" role="button" aria-expanded="false">
+        Add to new list
+      </a>
+      <div class="collapse" id="favorites_new">
+        <%= form_for(FavoriteList.new) do |f| %>
+          <div class="form-group">
+            <%= f.text_field(:name, class: 'form-control', placeholder: 'Name') %>
+          </div>
+          <%= hidden_field_tag(:title_id, title.id) %>
+          <div class="text-left">
+            <%= f.submit('Save', class: 'btn btn-primary') %>
+          </div>
+        <% end %>
+      </div>
+    </li>
+    <li>
+      <a class="btn btn-link" data-bs-toggle="collapse" href="#favorites_existing" role="button" aria-expanded="false">
+        Add to existing list
+      </a>
+      <div class="collapse" id="favorites_existing">
+        <% if fav_lists.empty? %>
+          <i>No available list</i>
+        <% else %>
+          <div class="favorites_existing_box">
+            <%= form_tag(append_title_favorite_lists_path) do %>
+              <% fav_lists.each do |favorite_list| %>
+                <div class="form-check">
+                  <%= check_box_tag('favorite_list_ids[]', favorite_list.id, (fav_title_ids.include?(favorite_list.id) ? true : false), class: 'form-check-input', id: "favorite_list_ids_#{favorite_list.id}") %>
+                  <%= label_tag("favorite_list_ids_#{favorite_list.id}", favorite_list.name) %>
+                </div>
+              <% end %>
+              <%= hidden_field_tag('title_id', title.id) %>
+              <%= submit_tag('Save', class: 'btn btn-primary') %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </li>
+  </ul>
+  <h4>Dashboards</h4>
+  <ul class="cp-settings-category">
+    <li>
+      <a class="btn btn-link" data-bs-toggle="collapse" href="#dashboards_existing" role="button" aria-expanded="false">
+        Add to existing Dashboard
+      </a>
+      <div class="collapse" id="dashboards_existing">
+        <% dashboard_list = title.available_dashboards(current_user.id) %>
+        <% if dashboard_list.empty? %>
+          <i>No available list</i>
+        <% else %>
+          <%= form_tag(append_title_dashboards_dashboards_path) do %>
+            <div class="favorites_existing_box">
+              <% dashboard_list.each do |dashboard| %>
+                <div class="form-check">
+                  <%= check_box_tag('dashboard_ids[]', dashboard.id, false, class: 'form-check-input', id: "dashboard_ids_#{dashboard.id}") %>
+                  <%= label_tag("dashboard_ids_#{dashboard.id}", dashboard.name) %>
+                </div>
+              <% end %>
+            </div>
+            <%= hidden_field_tag('title_id', title.id) %>
+            <%= submit_tag('Save', class: 'btn btn-primary') %>
+          <% end %>
+        <% end %>
+      </div>
+    </li>
+  </ul>
+  <h4>Export</h4>
+  <ul class="cp-settings-category">
+    <li>
+      <a class="btn btn-link" data-bs-toggle="collapse" href="#export_csv" role="button" aria-expanded="false">
+        CSV
+      </a>
+      <div class="collapse" id="export_csv">
+        <div>
+          <%= link_to 'Summary', csv_export_title_path(title), "data-turbolinks": false %>
+        </div>
+        <div>
+          <%= link_to 'Expanded', '' %>
+        </div>
+      </div>
+    </li>
+    <li>
+      <a class="btn btn-link" data-bs-toggle="collapse" href="#export_pdf" role="button" aria-expanded="false">
+        PDF
+      </a>
+      <div class="collapse" id="export_pdf">
+        <div>
+          <%= link_to 'Summary', '' %>
+        </div>
+      </div>
+    </li>
+  </ul>
+</div>

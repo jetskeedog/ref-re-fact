@@ -1,0 +1,403 @@
+<% content_for(:title){ @title.name } %>
+<% content_for(:og_img){ @title.attachment.attached? ? rails_blob_url(@title.attachment) : "" } %>
+<% content_for(:description){ @description } %>
+<% content_for(:keywords){ @keywords } %>
+
+<% if user_signed_in? %>
+  <%= render partial:"shared/report_modal"%>
+<% end %>
+<div class="movie-poster-and-description-main mt-5">
+  <div class="movie-banner">
+    <% if @title.static_poster %>
+      <%= image(@title.static_image.attachment, "movie-poster") %>
+    <% elsif @title.attachment.attached? %>
+      <%= image(@title.attachment, "movie-poster") %>
+    <% elsif @title.movie.present?%>
+      <%= image_tag(@title&.movie&.poster_url, class: "movie-poster") %>
+    <% else %>
+      <%= image_tag("https://placehold.it/250x400", class: "movie-poster") %>
+    <%end%>
+  </div>
+
+  <div class="container">
+    <div class="row">
+      <div class="col 12">
+        <div class="talent-info-container mb-6">
+          <div class="talent-poster">
+            <% if @title.title_type == 'Movie' %>
+              <% if @title.rank != 0 %>
+                <div class="rank-elm">Ranked <span><%= "##{@title.rank}" %></span></div>
+              <% end %>
+            <% end %>
+
+            <% if @title.static_poster %>
+              <%= image(@title.static_image.attachment,'rounded mx-auto d-block title-show-main-img', '', '', "box-shadow: 0px 2px 10px 0px rgba(0,0,0,0.54);") %>
+            <% elsif @title.attachment.attached? %>
+              <%= image_tag(url_for(@title.attachment), size: "", class: "rounded mx-auto d-block title-show-main-img", style: "box-shadow: 0px 2px 10px 0px rgba(0,0,0,0.54);word-break: break-all;") %>
+            <% elsif @title.movie.present?%>
+              <%= image(@title&.movie&.poster_url,"rounded text-left d-block title-show-main-img", "", "", "box-shadow: 0px 2px 10px 0px rgba(0,0,0,0.54);") %>
+            <% else %>
+              <%= image_tag("https://placehold.it/250x400", size: "", class: "rounded mx-auto d-block title-show-main-img", style: "box-shadow: 0px 2px 10px 0px rgba(0,0,0,0.54);") %>
+            <%end%>
+          </div>
+          <div class="talent-info">
+            <div class="d-flex justify-content-between score-with-type">
+              <span class="type"><%=@title.title_type%></span>
+              <% if @title.title_type == 'Movie' %>
+                <span class="iscore d-block d-sm-none ">Influence Score <%= @title.influence_score.round(2) %></span>
+              <%end%>
+            </div>
+            <h3 class="mb-4">
+              <%= @title.name %>
+              <%if @title.year.present? && @title.year > 0 %>
+                <span class="movie-type"><%= title_year(@title.year, @title.end_year) %></span>
+              <%end%>
+            </h3>
+            <%if @title.imdb_id.present? %>
+              <h4>Imdb ID: <%= @title.imdb_id %></h4>
+            <%end%>
+
+            <% if @title.movie.present? %>
+              <% if @title.movie.movie_sources.present? %>
+                <div class="ott-platform">
+                  <p class="text-white">
+                    Watch Now:
+                  </p>
+                  <div class="ott-platform-wraper">
+                    <%= link_to image_pack_tag("media/images/amazon.png"), @title.movie.movie_sources.first.web_link, target: "_blank" %>
+                    <%= link_to image_pack_tag("media/images/Netflix.png"), @title.movie.movie_sources.first.android_link, target: "_blank" %>
+                    <%= link_to image_pack_tag("media/images/disney_logo.png"), @title.movie.movie_sources.first.ios_link, target: "_blank" %>
+                    <%= link_to image_pack_tag("media/images/hulu.png"), title_path(@title), target: "_blank" %>
+                  </div>
+                </div>
+              <% end %>
+            <% end %>
+            <div class="genres-container-desktop">
+              <%if @title.year.present? && @title.year > 1 %>
+                <%if @genres.present? && @genres.count > 0 %>
+                  <%if @title.title_type == "TV Episode" %>
+                    <% parent_tv_season_id = TvSeasonEpisodeAssociation.where(tv_episode_id: @title.id).first.tv_season_id %>
+                    <% parent_tv_series_id = TvSerieSeasonAssociation.where(tv_season_id: parent_tv_season_id).first.tv_serie_id %>
+                    <% tv_series_genres = Title.friendly.find(parent_tv_series_id).genres %>
+                    <% tv_series_genres_names = tv_series_genres.pluck(:name) %>
+                    <% tv_episode_genres = @title.genres %>
+                    <% tv_episode_genres_names = tv_episode_genres.pluck(:name) %>
+          
+                    <% if tv_series_genres.count > 0 %>
+                      <h5 class="hide">Series Genre:</h5>
+                      <% tv_series_genres.each do |genre| %>
+                        <%=link_to "#{genre.name.titleize}", genre_path(genre.slug), class: "btn btn-round title-genres" %>
+                      <%end%>
+                    <% end %>
+          
+                    <% if (tv_episode_genres_names - tv_series_genres_names).count > 0 %>
+                      <h5 class="hide">Episode Genre:</h5>
+                      <% tv_episode_genres.each do |genre| %>
+                        <% if !tv_series_genres_names.include?(genre.name) %>
+                          <%=link_to "#{genre.name.titleize}", genre_path(genre.slug), class: "btn btn-round m-2 title-genres" %>
+                        <% end %>
+                      <%end%>
+                    <% end %>
+                  <% else %>
+                    <h5 class="hide">Genres:</h5>
+                    <% @genres.each do |genre_key, genre| %>
+                      <% rank = genre[0].genre_movie_ranks.movie_rank(@title.id, genre[0].id) %>
+                      <% if rank != 0 %>
+                        <div class="genre_main">
+                          <%=link_to "#{genre[0].name.titleize} <span>##{rank}</span>".html_safe, genre_path(genre[0].slug), class: "btn btn-round m-2 genre-hover-link" %>
+                          <% if (can? :destroy, GenreRelationship) %>
+                            <span class="genre_span">
+                              <%= link_to genre_relationship_path(id: genre[0].id, title_id: @title.id), data: { method: :delete, confirm: "Are you sure?" }, class: "genre_link", title: "Delete Genre Relationship" do %>
+                                x
+                              <% end %>
+                            </span>
+                          <% end %>
+                        </div>
+                      <% else %>
+                        <div class="genre_main">
+                          <%=link_to "#{genre[0].name.titleize}", genre_path(genre[0].slug), class: "btn btn-round m-2 genre-hover-link" %>
+                          <% if (can? :destroy, GenreRelationship) %>
+                            <span class="genre_span">
+                              <%= link_to genre_relationship_path(id: genre[0].id, title_id: @title.id), data: { method: :delete, confirm: "Are you sure?" }, class: "genre_link", title: "Delete Genre Relationship" do %>
+                                x
+                              <% end %>
+                            </span>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    <%end%>
+                  <% end %>
+                <%end%>
+              <% elsif @title.title_type == 'Movie' && @title.genres.count > 0 %>
+                <h4 class="col-12 ml-0 mt-3 movie_title line genre-h text-white">Genres:</h4>
+                <% @title.genres.each do |genre| %>
+                  <% rank = genre.genre_movie_ranks.movie_rank(@title.id, genre.id) %>
+                  <% if rank != 0 %>
+                    <div class="genre_main">
+                      <%=link_to "#{genre.name.titleize} <span>##{rank}</span>".html_safe, genre_path(genre.slug), class: "btn btn-round m-2 genre-hover-link" %>
+                      <% if (can? :destroy, GenreRelationship)%>
+                        <span class="genre_span">
+                          <%= link_to genre_relationship_path(id: genre.id, title_id: @title.id),data: { method: :delete, confirm: "Are you sure?" }, class: "genre_link", title: "Delete Genre Relationship" do %>
+                            x
+                          <% end %>
+                        </span>
+                      <% end %>
+                    </div>
+                  <% else %>
+                    <div class="genre_main">
+                      <%=link_to "#{genre.name.titleize}", genre_path(genre.slug), class: "btn btn-round title-genres-btn genre-hover-link" %>
+                      <% if (can? :destroy, GenreRelationship) %>
+                        <span class="genre_span">
+                          <%= link_to genre_relationship_path(id: genre.id, title_id: @title.id), data: { method: :delete, confirm: "Are you sure?" }, class: "genre_link", title: "Delete Genre Relationship" do %>
+                            x
+                          <% end %>
+                        </span>
+                      <% end %>
+                    </div>
+                  <% end %>
+                <%end%>
+              <%end%>
+            </div>
+          </div>
+
+          <% if @title.title_type == 'Movie' %>
+            <div class="influence-score-container">
+                <div class="influence-score">
+                  <div class="influence-score-bg"></div>
+                  <span class="d-block text-center">Influence Score<br><%= @title.influence_score.round(2) %></span>
+                  <span class="help">
+                    <%= link_to "?", "/pages/about", class: "text-dark text-decoration-none" %>
+                  </span>
+                </div>
+            </div>
+          <%end%>
+
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="genres-container-mobile">
+          <%if @title.year.present? && @title.year > 1 %>
+            <%if @genres.present? && @genres.count > 0 %>
+              <%if @title.title_type == "TV Episode" %>
+                <% parent_tv_season_id = TvSeasonEpisodeAssociation.where(tv_episode_id: @title.id).first.tv_season_id %>
+                <% parent_tv_series_id = TvSerieSeasonAssociation.where(tv_season_id: parent_tv_season_id).first.tv_serie_id %>
+                <% tv_series_genres = Title.friendly.find(parent_tv_series_id).genres %>
+                <% tv_series_genres_names = tv_series_genres.pluck(:name) %>
+                <% tv_episode_genres = @title.genres %>
+                <% tv_episode_genres_names = tv_episode_genres.pluck(:name) %>
+      
+                <% if tv_series_genres.count > 0 %>
+                  <h5 class="">Series Genre:</h5>
+                  <% tv_series_genres.each do |genre| %>
+                    <%=link_to "#{genre.name.titleize}", genre_path(genre.slug), class: "btn btn-round title-genres" %>
+                  <%end%>
+                <% end %>
+      
+                <% if (tv_episode_genres_names - tv_series_genres_names).count > 0 %>
+                  <h5 class="">Episode Genre:</h5>
+                  <% tv_episode_genres.each do |genre| %>
+                    <% if !tv_series_genres_names.include?(genre.name) %>
+                      <%=link_to "#{genre.name.titleize}", genre_path(genre.slug), class: "btn btn-round m-2 title-genres" %>
+                    <% end %>
+                  <%end%>
+                <% end %>
+              <% else %>
+                <h5 class="">Genres:</h5>
+                <% @genres.each do |genre_key, genre| %>
+                  <% rank = genre[0].genre_movie_ranks.movie_rank(@title.id, genre[0].id) %>
+                  <% if rank != 0 %>
+                    <div class="genre_main">
+                      <%=link_to "#{genre[0].name.titleize} <span>##{rank}</span>".html_safe, genre_path(genre[0].slug), class: "btn btn-round m-2 genre-hover-link" %>
+                      <% if (can? :destroy, GenreRelationship) %>
+                        <span class="genre_span">
+                          <%= link_to genre_relationship_path(id: genre[0].id, title_id: @title.id), data: { method: :delete, confirm: "Are you sure?" }, class: "genre_link", title: "Delete Genre Relationship" do %>
+                            x
+                          <% end %>
+                        </span>
+                      <% end %>
+                    </div>
+                  <% else %>
+                    <div class="genre_main">
+                      <%=link_to "#{genre[0].name.titleize}", genre_path(genre[0].slug), class: "btn btn-round m-2 genre-hover-link" %>
+                      <% if (can? :destroy, GenreRelationship) %>
+                        <span class="genre_span">
+                          <%= link_to genre_relationship_path(id: genre[0].id, title_id: @title.id), data: { method: :delete, confirm: "Are you sure?" }, class: "genre_link", title: "Delete Genre Relationship" do %>
+                            x
+                          <% end %>
+                        </span>
+                      <% end %>
+                    </div>
+                  <% end %>
+                <%end%>
+              <% end %>
+            <%end%>
+          <% elsif @title.title_type == 'Movie' && @title.genres.count > 0 %>
+            <h4 class="col-12 ml-0 mt-3 movie_title line genre-h text-white">Genres:</h4>
+            <% @title.genres.each do |genre| %>
+              <% rank = genre.genre_movie_ranks.movie_rank(@title.id, genre.id) %>
+              <% if rank != 0 %>
+                <div class="genre_main">
+                  <%=link_to "#{genre.name.titleize} <span>##{rank}</span>".html_safe, genre_path(genre.slug), class: "btn btn-round m-2 genre-hover-link" %>
+                  <% if (can? :destroy, GenreRelationship)%>
+                    <span class="genre_span">
+                      <%= link_to genre_relationship_path(id: genre.id, title_id: @title.id),data: { method: :delete, confirm: "Are you sure?" }, class: "genre_link", title: "Delete Genre Relationship" do %>
+                        x
+                      <% end %>
+                    </span>
+                  <% end %>
+                </div>
+              <% else %>
+                <div class="genre_main">
+                  <%=link_to "#{genre.name.titleize}", genre_path(genre.slug), class: "btn btn-round title-genres-btn genre-hover-link" %>
+                  <% if (can? :destroy, GenreRelationship) %>
+                    <span class="genre_span">
+                      <%= link_to genre_relationship_path(id: genre.id, title_id: @title.id), data: { method: :delete, confirm: "Are you sure?" }, class: "genre_link", title: "Delete Genre Relationship" do %>
+                        x
+                      <% end %>
+                    </span>
+                  <% end %>
+                </div>
+              <% end %>
+            <%end%>
+          <%end%>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
+
+ 
+  
+  <!-- filter options start -->
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <h2 class="text-white hide">Results: <%= "#{@sum_all}" %></h2>
+        <div class="sorting-component">
+           <div class="sorting-item">
+            <%= link_to(title_path(@title, sort: "All"), remote: true, class: "title-type-group chosen") do %>
+                All&nbsp;<span><%= " (#{@sum_all})" %></span>
+            <% end %>
+           </div>
+           <% if @related_titles.present? %>
+            <%@related_titles.each do |k,v|%>
+              <% sum_category = Title.where(id: @influence_ids, title_type: k).count + Title.where(id: @influenced_ids, title_type: k).count %>
+              <div class="sorting-item">
+                <%= link_to(title_path(@title, sort: k), remote: true, class: "title-type-group" ) do %>
+                  <%= "#{k}" %>&nbsp<span><%= "(#{sum_category})" %></span>
+                <% end %>
+              </div>
+            <%end%>
+          <% end %>
+          <div class="sorting-item hide">
+            <button class="icon-btn show-filter-btn">
+              <%= image_pack_tag "Filter_alt.svg", class: "", alt: "show filter" %>
+            </button>
+          </div>
+        </div>
+        
+          
+        <div class="d-flex">
+          <% if can? :create, Relationship %>
+            <%= link_to(new_relationship_path(title_id: @title.id),  class: "btn btn-primary mr-2 title-type-group cust-title-genre-group-influence", style: "margin-top: 3px;") do %>
+              Add Relationship
+            <% end %>
+          <%end%>
+          <% if can? :create, GenreRelationship %>
+            <%= link_to(new_genre_relationship_path(title_id: @title.id), class: "btn btn-primary mr-2 title-genres-btn") do %>
+              <%= image_pack_tag "media/images/Plus_sign.png", width: "15", height: "15", class: "mr-1" %>
+              Add Genre
+            <%end%>
+          <%end%>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <!-- filter options end -->
+
+<!-- filter wrapper strat -->
+<div class="container mt-4">
+  <div class="title-filter-wrapper">
+    <div id="related_genres">
+      <%= render "titles/show/related_genres" %>
+    </div>
+    <div id="tags" class="mt-4">
+      <%= render "titles/show/tags" %>
+    </div>
+    <% if @min_year != @max_year %>  <!-- year filter is displayed only if there is difference between years -->
+      <h5 class="text-center">Year:</h5>
+      <div class="title-range-slider" id="range-slider-1" name="year_range" value="" data-min="<%= @min_year %>" data-max="<%= @max_year %>" data-from="<%= @min_year %>" data-to="<%= @max_year %>" data-sort="<%= @sort %>" data-sort-by-genre="<%= @sort_by_genre %>" data-sort-by-tag="<%= @sort_by_tag %>" ></div>
+    <% end %>
+  </div>
+  <div class="d-flex justify-content-center">
+    <h5 class="text-decoration-underline mt-3 show-more-btn" id="see-more">SHOW MORE</h5>
+  </div>
+</div>
+
+
+<!-- filter wrapper end -->
+
+
+<div class="genres-section-bg">
+  <div class="container mt-4">
+    
+    <div class="<%= 'genres-btn-wrapper' if @title.title_type == 'Movie' && @title.genres.count > 0 %>" >
+      <% if @title.title_type == "TV Series" %>
+        <div id="">
+          <%= render "titles/show/tv_title_links" %>
+        </div>
+      <% end %>
+    </div>
+    <% if @title.year.present? && @title.year > 1 %>
+      <div id="influence_rel_container">
+        <%= render "titles/show/influence", fav_lists: @fav_lists, fav_title_ids: @fav_title_ids %>
+      </div>
+    <% end %>
+
+    <% if @title.title_type != 'Award' && @title.title_type != 'List' %>
+      <div id="influenced_rel_container">
+        <%= render "titles/show/influenced", fav_lists: @fav_lists, fav_title_ids: @fav_title_ids %>
+      </div>
+    <%end%>
+
+    <% if can? :create, FavoriteList %>
+      <%= render 'titles/show/side_option_bar', title: @title, fav_lists: @fav_lists, fav_title_ids: @fav_title_ids %>
+    <% end %>
+  </div>
+</div>
+<!-- </div> -->
+
+<script type="text/javascript">
+  
+  function fetchTitlesByYear(min_year, max_year, sort1, sort_by_genre1, sort_by_tag1){
+    loading = false
+    filter_data = {from: min_year, to: max_year, sort: sort1, sort_by_genre: sort_by_genre1, sort_by_tag: sort_by_tag1}
+
+    if(!loading){
+      loading = true
+      $.get({url: "<%= request.path %>", data: filter_data, dataType: "script"}, function(){
+      })
+        .done(function(){
+        })
+        .fail(function(){
+        })
+        .always(function(){
+          loading = false
+        });
+    }
+  }
+
+  $(document).ready(function(){
+    $('.show-more-btn').on('click', function(){
+      $('.title-filter-wrapper').toggleClass('more');        
+      if($('.show-more-btn').text() == "SHOW MORE"){
+        $('.show-more-btn').text('HIDE')
+      }else{
+        $('.show-more-btn').text('SHOW MORE')          
+      }
+    });
+  })
+</script>

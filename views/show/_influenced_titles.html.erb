@@ -1,0 +1,57 @@
+<% @influenced_titles.uniq.each do |influence_relationship|%>
+  <div class="col-lg-3 col-md-4 col-sm-6 col-6 mb-4">
+    <div class="index-card movie-card mb-4">
+    <% rel = Relationship.relationship_influenced(@title.id, influence_relationship.id )%>
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="btn-container">
+            <% if rel.tags.present? %>
+              <%= link_to "#{rel.tags.first.name}", relationship_path(rel), class: "btn btn-primary text-center tag-btn" %>
+            <% elsif influence_relationship.tags.present? %>
+              <%= link_to "#{influence_relationship.tags.first.name}", relationship_path(rel), class: "text-center btn tag-button btn-primary tag-btn" %>
+            <% else %>
+              <%= link_to "Missing Tag", relationship_path(rel), class: "text-center btn tag-button btn-primary tag-btn"  %>
+            <% end %>
+          </div>
+          
+          <% if can? :destroy, Relationship %>
+            
+            <div class="add-to-fav">
+              <%= check_box_tag('favorite_list_ids[]', nil, ((@title_ids.present? && @title_ids.include?(influence_relationship.id)) ? true : false), class: 'favorite_checkbox_list form-check-input', id: "favorite_checkbox_ids_#{influence_relationship.id}", "data-title-name" => influence_relationship.name) %>
+              <label for="favorite_checkbox_idsss_<%= influence_relationship.id %>">
+                <i class="far fa-heart"></i>
+                <i class="fas fa-heart"></i>
+              </label>
+            </div>
+            <%= link_to relationship_path(rel), method: :delete, data: { confirm: "Are you sure?" }, class: "text-danger remove-btn" do %>
+              <span class="icon s7-trash"></span>
+            <% end %>
+            
+          <% end %>
+          <% if influence_relationship.static_poster %>
+            <a class="" href="<%= title_path(influence_relationship)%>"><%= image(influence_relationship.static_image.attachment) %></a>
+          <%elsif influence_relationship.attachment.attached?%>
+            <a class="" href="<%= title_path(influence_relationship)%>"><%= image(influence_relationship.attachment) %></a>
+          <% elsif influence_relationship.movie.present?%>
+            <a class="" href="<%= title_path(influence_relationship)%>"><%= image_tag(influence_relationship&.movie&.poster_url, class: "", size: "") %></a>
+          <%else%>
+            <img class="" src="https://placehold.it/150x150" alt="">
+          <%end%>
+        </div>
+        <div class="card-footer title-show-card-footer">
+          <h5>
+            <%= link_to "#{influence_relationship.name}", title_path(influence_relationship) %>
+          </h5>
+          <h5>Type: <%= influence_relationship.title_type %></h5>
+          
+          <% if !influence_relationship.year.nil? && influence_relationship.year > 0 %>
+            <h5>Year: <%= title_year(influence_relationship.year, influence_relationship.end_year) %>
+            </h5>
+          <% end %>
+          <span class="spacer-item"></span>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+<%end%>

@@ -1,0 +1,48 @@
+<% max_count = 15; %>
+<% genres_array = @influence_genre_array +  @influenced_genre_array%>
+<% if genres_array.present? %>
+  <h5 class="text-center text-white mt-3">Genres influenced by the movie:</h5>
+  <div class="genres-list">
+    <% genres_array_asc=genres_array.uniq %>
+    <% count_influence = 0; %>
+    <% genres_array_asc.each do |genre_name| %>
+      <% genre_count = genres_array.count(genre_name) %>
+      <%= link_to title_path(@title, sort: @sort.present? ? @sort : "", sort_by_genre: genre_name, title_container: "influence_rel_container"), remote: true, class: "btn m-2 btn-round title-genre-group-influence", data: {genre_name: genre_name} do%>
+        <%= genre_count %> <%= genre_name.titleize %>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>
+
+<script type="text/javascript">
+/*The js code is in view because this partial is rendered asynchronously*/
+
+  $(document).on('click', '.title-genre-group-influence', function() {
+    //document.getElementById("influence_rel_container").scrollIntoView()
+    $('.title-genre-group-influence').removeClass('talent-genre-selected-btn');
+    $('.title-genre-group-influenced').removeClass('talent-genre-selected-btn');
+    $(this).addClass('talent-genre-selected-btn');
+    var genreName = $(this).data("genreName");
+    $('.title-genre-group-influenced').each(function () {
+      if ($(this).data("genreName") == genreName){
+        $(this).addClass('talent-genre-selected-btn');
+      }
+    })
+  });
+
+  $(document).on('click', '.title-genre-group-influenced', function() {
+    //document.getElementById("influenced_rel_container").scrollIntoView()
+    $('.title-genre-group-influenced').removeClass('talent-genre-selected-btn');
+    $('.title-genre-group-influence').removeClass('talent-genre-selected-btn');
+    $(this).addClass('talent-genre-selected-btn');
+    var genreName = $(this).data("genreName");
+    $('.title-genre-group-influence').each(function () {
+      if ($(this).data("genreName") == genreName){
+        $(this).addClass('talent-genre-selected-btn');
+      }
+    })
+  });
+
+
+
+</script>
